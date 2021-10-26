@@ -5,10 +5,11 @@ import cv2
 import os
 import numpy as np
 from tkinter import *
-from tkinter.filedialog import askopenfile, asksaveasfilename
+from tkinter.filedialog import askopenfile, asksaveasfilename, askopenfilenames
 import shutil
 import sys
 from PIL import Image
+import math
 
 cap = cv2.VideoCapture(0)
 
@@ -24,38 +25,43 @@ videos = {}
 
 
 def browse_photo():
-    filename = askopenfile(title="Pick a file...")
+    filename = askopenfilenames(title="Pick a file...")
 
-    img = Image.open(filename.name)
-    rgb_img = img.convert("RGB")
+    for file in filename:
 
-    new_name = asksaveasfilename()
-    new_name = os.path.split(new_name)[1]
+        img = Image.open(file)
+        rgb_img = img.convert("RGB")
 
-    rgb_img.save(os.path.abspath(images_path)+f"/{new_name}.jpg")
+        new_name = asksaveasfilename(
+            title="Rename image something you'll remember")
+        new_name = os.path.split(new_name)[1]
 
-    #shutil.move(rgb_img, images_path)
+        rgb_img.save(os.path.abspath(images_path)+f"/{new_name}.jpg")
 
-    label_file.config(
-        text=f"Moved {filename.name} to the {images_path} directory.")
+        # shutil.move(rgb_img, images_path)
+
+        label_file.config(
+            text=f"Moved {len(filename)} image(s) to the {images_path} directory.")
 
 
 def browse_video():
-    filename = askopenfile(title="Pick a file...")
+    filename = askopenfilenames(title="Pick a file...")
 
-    new_name = asksaveasfilename(
-        title="Video title must be same name as image file saved")
-    new_name = os.path.split(new_name)[1]
-    try:
-        shutil.copyfile(filename.name, os.path.abspath(
-            videos_path)+"/video_"+new_name+".mp4")
-    except:
-        pass
+    for file in filename:
 
-    #shutil.move("video_"+new_name, videos_path)
+        new_name = asksaveasfilename(
+            title="Video title must be same name as image file saved")
+        new_name = os.path.split(new_name)[1]
+        try:
+            shutil.copyfile(file, os.path.abspath(
+                videos_path)+"/video_"+new_name+".mp4")
+        except:
+            pass
+
+    # shutil.move("video_"+new_name, videos_path)
 
     label_file.config(
-        text=f"Moved {filename.name} to the {videos_path} directory.")
+        text=f"Moved {len(filename)} video(s) to the {videos_path} directory.")
 
 
 def exit():
@@ -69,6 +75,7 @@ def quit():
 
 
 def list_photos(images_path):
+
     return os.listdir(images_path)
 
 
@@ -186,6 +193,7 @@ vid()
 # Update descriptor list with photos uploaded
 desList, kpList = get_descriptors(images)
 
+
 while True:
     succ, webcam = cap.read()
     foundImg = webcam.copy()
@@ -234,7 +242,7 @@ while True:
             pass
 
     if des2 is not None:
-        #_id = find_id(webcam, desList)
+        # _id = find_id(webcam, desList)
         # print(images_names[_id])
 
         try:
@@ -292,19 +300,40 @@ while True:
 
     cv2.imshow('found_image', foundImg)
     try:
-        #cv2.imshow('box', bounding_box)
+        # cv2.imshow('box', bounding_box)
         cv2.putText(imgAug, f"Current Frame: {frameCounter}", (0, 50),
                     (cv2.FONT_HERSHEY_SIMPLEX), 1, (0, 255, 0), 2, cv2.LINE_AA)
 
         cv2.putText(imgAug, f"Total Frames: {target_video.get(cv2.CAP_PROP_FRAME_COUNT)}", (0, 80),
                     (cv2.FONT_HERSHEY_SIMPLEX), 1, (0, 255, 0), 2, cv2.LINE_AA)
+
+        # Display bar
+        nextFrame = target_video.get(cv2.CAP_PROP_POS_FRAMES)
+        totalFrames = target_video.get(cv2.CAP_PROP_FRAME_COUNT)
+        comp = nextFrame / totalFrames
+        thicc = 20
+        y = math.ceil(webcam.shape[1] - webcam.shape[1]/25)
+        x = 0
+        w = webcam.shape[0]
+
+        vid_length = (totalFrames//25)/60
+        prec_vid_length = "{:.2f}".format(vid_length)
+
+        cv2.line(imgAug, (10, 1050),
+                 (math.ceil(w*comp), 1050), (0, 0, 255), thicc)
+
+        cv2.putText(imgAug, f"{(frameCounter//25)}/{prec_vid_length}", (0, 1090),
+                    cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2, cv2.LINE_AA)
+
         cv2.putText(imgAug, f"To quit press 'q'", (0, 1000),
-                    (cv2.FONT_HERSHEY_SIMPLEX), 1, (0, 255, 0), 2, cv2.LINE_AA)
+
+                    (cv2.FONT_HERSHEY_SIMPLEX), 1, (255, 255, 255), 2, cv2.LINE_AA)
 
         # Show augmented image
         cv2.imshow('augmented_video', imgAug)
-    except:
-        pass
+
+    except Exception as e:
+        print(str(e))
 
     # Exiting program
     k = cv2.waitKey(1)
