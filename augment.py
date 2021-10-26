@@ -10,6 +10,7 @@ import shutil
 import sys
 from PIL import Image
 import math
+from wand.image import Image as WandImage
 
 cap = cv2.VideoCapture(0)
 
@@ -25,27 +26,44 @@ videos = {}
 
 
 def browse_photo():
-    filename = askopenfilenames(title="Pick a file...")
+    filename = askopenfilenames(title="Pick a file...", filetypes=[
+        ("jpg", "*.jpg"), ("png", "*.png"), ("jpeg", "*.jpeg"), ("HEIC", "*.heic")])
 
     for file in filename:
 
-        img = Image.open(file)
-        rgb_img = img.convert("RGB")
+        if '.heic' not in file:
 
-        new_name = asksaveasfilename(
-            title="Rename image something you'll remember")
-        new_name = os.path.split(new_name)[1]
+            img = Image.open(file)
+            rgb_img = img.convert("RGB")
 
-        rgb_img.save(os.path.abspath(images_path)+f"/{new_name}.jpg")
+            new_name = asksaveasfilename(
+                title="Rename image something you'll remember")
+            new_name = os.path.split(new_name)[1]
+
+            rgb_img.save(os.path.abspath(images_path)+f"/{new_name}.jpg")
+            img.close()
+        else:
+            img = WandImage(filename=file)
+            img.format = 'jpg'
+            new_name = asksaveasfilename(
+                title="Rename image something you'll remember")
+
+            new_name = os.path.split(new_name)[1]
+
+            img.save(filename=os.path.abspath(images_path)+f"/{new_name}.jpg")
+            img.close()
 
         # shutil.move(rgb_img, images_path)
 
         label_file.config(
             text=f"Moved {len(filename)} image(s) to the {images_path} directory.")
+        images_list = list_photos(images_path)
+        label_img_list.config(text=f"Images in folder: {len(images_list)}")
 
 
 def browse_video():
-    filename = askopenfilenames(title="Pick a file...")
+    filename = askopenfilenames(
+        title="Pick a file...", filetypes=[("mp4", "*.mp4")])
 
     for file in filename:
 
@@ -62,6 +80,9 @@ def browse_video():
 
     label_file.config(
         text=f"Moved {len(filename)} video(s) to the {videos_path} directory.")
+
+    videos_list = list_videos(videos_path)
+    label_vid_list.config(text=f"Videos in folder: {len(videos_list)}")
 
 
 def exit():
@@ -87,16 +108,17 @@ if not os.path.isdir(images_path) or not os.path.isdir(videos_path):
     os.mkdir(images_path)
     os.mkdir(videos_path)
 
+images_list = list_photos(images_path)
+videos_list = list_videos(videos_path)
 
-if ".DS_Store" in os.listdir(images_path) or ".DS_Store" in os.listdir(videos_path):
+# if .DS_Store is in the list, remove it
+if '.DS_Store' in images_list or '.DS_Store' in videos_list:
     try:
-        os.remove(os.path.abspath(images_path)+"/.DS_Store")
-        os.remove(os.path.abspath(videos_path)+"/.DS_Store")
+        images_list.remove('.DS_Store')
+        videos_list.remove('.DS_Store')
     except:
         pass
 
-images_list = list_photos(images_path)
-videos_list = list_videos(videos_path)
 
 tk = Tk()
 tk.title('Choose Image / Video')
@@ -104,23 +126,35 @@ tk.geometry('900x500')
 
 label_file = Label(
     tk, text="Please choose and image / video to augment ontop of the image.", width=100, height=4, fg="blue", bg="white")
-label_img_list = Label(
-    tk, text=f"Images in folder: {len(images_list)}", width=100, height=2, fg="blue", bg="white")
-label_vid_list = Label(
-    tk, text=f"Videos in folder: {len(videos_list)}", width=100, height=2, fg="blue", bg="white")
+label_inst = Label(tk, text="Note: The image and video uploaded must be saved with the SAME name.",
+                   width=100, height=4, fg="blue", bg="white")
 
-button_exp = Button(tk, text="Choose Image", command=browse_photo)
-button_video = Button(tk, text="Choose Video", command=browse_video)
-button_exit = Button(tk, text="Continue", command=exit)
-button_quit = Button(tk, text="Quit", command=quit)
+label_img_list = Label(
+    tk, text=f"Images in folder: {len(images_list)}", width=100, height=2, fg="black", bg="white")
+label_vid_list = Label(
+    tk, text=f"Videos in folder: {len(videos_list)}", width=100, height=2, fg="black", bg="white")
+
+if len(list_photos(images_path)) == 0 or len(list_videos(videos_path)) == 0:
+    print("No images or videos found.")
+    label_warning = Label(tk, text="Warning: No images or videos found. Please choose at least 1 image and 1 video.",
+                          width=100, height=4, fg="red", bg="white")
+    label_warning.place(relx=0.0, rely=1.0, anchor="sw")
+
+button_exp = Button(tk, text="Choose Image",
+                    command=browse_photo, width=10, height=1)
+button_video = Button(tk, text="Choose Video",
+                      command=browse_video, width=10, height=1)
+button_exit = Button(tk, text="Continue", command=exit, width=10, height=1)
+button_quit = Button(tk, text="Quit", command=quit, width=10, height=1)
 
 label_file.grid(column=1, row=1)
-label_img_list.grid(column=1, row=2)
-label_vid_list.grid(column=1, row=3)
-button_exp.grid(column=1, row=4)
-button_video.grid(column=1, row=5)
-button_exit.grid(column=1, row=6)
-button_quit.grid(column=1, row=7)
+label_inst.grid(column=1, row=2)
+label_img_list.grid(column=1, row=3)
+label_vid_list.grid(column=1, row=4)
+button_exp.place(relx=0.5, rely=0.5, anchor="center")
+button_video.place(relx=0.5, rely=0.55, anchor="center")
+button_exit.place(relx=0.5, rely=0.6, anchor="center")
+button_quit.place(relx=0.5, rely=0.65, anchor="center")
 
 tk.mainloop()
 
