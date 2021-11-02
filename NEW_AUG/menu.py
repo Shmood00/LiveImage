@@ -9,9 +9,11 @@ import cv2
 
 
 class Menu:
-    def __init__(self, master, orb, images_path, videos_path, images, images_names, videos, desList, kpList):
+    orb = cv2.ORB_create(fastThreshold=1, nfeatures=1000)
+
+    def __init__(self, master, images_path, videos_path, images, images_names, videos, desList, kpList):
         self.master = master
-        self.orb = orb
+
         self.images_path = images_path
         self.videos_path = videos_path
         self.images = images

@@ -58,12 +58,9 @@ frameCounter = 0
 
 
 tk = Tk()
-menu = Menu(tk, orb, images_path, videos_path, images,
+menu = Menu(tk, images_path, videos_path, images,
             images_names, videos, desList, kpList)
-
-
 tk.mainloop()
-
 
 while True:
 
